@@ -8,7 +8,22 @@ import { openDatabase, withTransaction } from './database.js';
 import { HttpError, requireValue, readJson, sendJson as send, servePublicPage } from './http.js';
 
 const MINUTE = 60000;
+const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
 const activeStates = "'pending','confirming','paid','cancelling','free_scheduled'";
+
+function matchesPublicOrigin(requestOrigin, publicOrigin) {
+  if (requestOrigin === publicOrigin.origin) return true;
+  if (!requestOrigin || !localHosts.has(publicOrigin.hostname)) return false;
+  let suppliedOrigin;
+  try {
+    suppliedOrigin = new URL(requestOrigin);
+  } catch {
+    return false;
+  }
+  return localHosts.has(suppliedOrigin.hostname) &&
+    suppliedOrigin.protocol === publicOrigin.protocol &&
+    suppliedOrigin.port === publicOrigin.port;
+}
 
 function intakeData(value) {
   requireValue(value && typeof value === 'object' && !Array.isArray(value), '학생·연락 정보를 입력해 주세요.');
@@ -190,7 +205,7 @@ export function createBookingServer({
         return;
       }
       if (!['GET', 'HEAD'].includes(method) && path !== '/api/payments/webhook') {
-        requireValue(request.headers.origin === publicOrigin, '이 사이트에서 요청을 다시 보내 주세요.', 403);
+        requireValue(matchesPublicOrigin(request.headers.origin, origin), '이 사이트에서 요청을 다시 보내 주세요.', 403);
       }
       expire();
       if (method === 'GET' && path === '/api/config') {

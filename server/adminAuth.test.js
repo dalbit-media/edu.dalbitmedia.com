@@ -40,9 +40,10 @@ test('first local administrator chooses a password once and anonymous visitors n
   const f = await fixture(t);
   const admin = f.client();
   const guest = f.client();
+  const minimumPassword = '123456789';
   assert.deepEqual((await guest('/admin/status')).data, { configured: false, setupAllowed: true, requiresSetupToken: false });
   assert.equal((await guest('/admin/board')).status, 401);
-  assert.equal((await admin('/admin/setup', { password: 'short' })).status, 400);
+  assert.equal((await admin('/admin/setup', { password: '12345678' })).status, 400);
   assert.equal((await admin('/admin/setup', { password: 'a'.repeat(257) })).status, 400);
   assert.equal((await admin('/admin/setup', { password }, { Origin: 'https://untrusted.example' })).status, 403);
   const untrustedHostStatus = await new Promise((resolve, reject) => {
@@ -56,13 +57,16 @@ test('first local administrator chooses a password once and anonymous visitors n
     request.end(JSON.stringify({ password }));
   });
   assert.equal(untrustedHostStatus, 403);
-  const created = await admin('/admin/setup', { password });
+  const created = await admin('/admin/setup', { password: minimumPassword });
   assert.equal(created.status, 201);
   assert.match(created.headers.get('set-cookie'), /HttpOnly; SameSite=Strict/);
   assert.equal((await admin('/admin/board')).status, 200);
   assert.equal((await guest('/admin/board')).status, 401);
   assert.equal((await guest('/admin/setup', { password: nextPassword })).status, 409);
   assert.equal((await guest('/admin/status')).data.setupAllowed, false);
+  assert.equal((await guest('/admin/login', { password: '12345678' })).status, 401);
+  assert.equal((await guest('/admin/login', { password: minimumPassword })).status, 200);
+  assert.equal((await guest('/admin/login', { password: minimumPassword }, { Origin: 'http://localhost:5173' })).status, 200);
 });
 
 test('public initial setup is locked without a private bootstrap token', async (t) => {
@@ -85,6 +89,7 @@ test('remote bootstrap requires its token and payments remain disabled until an 
   assert.equal(status.data.setupAllowed, true);
   assert.ok(!JSON.stringify(status.data).includes(setupToken));
   assert.equal((await admin('/config')).data.paymentReady, false);
+  assert.equal((await admin('/admin/login', { password }, { Origin: 'https://www.dalbit.example' })).status, 403);
   assert.equal((await admin('/admin/setup', { password, setupToken: 'wrong' })).status, 403);
   const created = await admin('/admin/setup', { password, setupToken });
   assert.equal(created.status, 201);

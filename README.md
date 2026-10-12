@@ -111,7 +111,7 @@ starts; later requests are handled by the operator under applicable obligations.
 
 - The first successful protected setup creates the single administrator and
   starts an authenticated session. Ordinary site visitors and intake applicants
-  are never promoted. Passwords are 16–256 characters and stored only as salted
+  are never promoted. Passwords are 9–256 characters and stored only as salted
   scrypt hashes in SQLite; login hashing is asynchronous.
 - Local setup is allowed only with a loopback `PUBLIC_ORIGIN`, loopback request
   host and loopback socket. A public deployment requires a private random
