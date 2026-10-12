@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dalbit-edu.zip
+.env
+.env.*
+!.env.example
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

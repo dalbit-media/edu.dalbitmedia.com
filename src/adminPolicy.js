@@ -1,0 +1,3 @@
+export const ADMIN_PASSWORD_MIN_LENGTH = 16;
+export const ADMIN_PASSWORD_MAX_LENGTH = 256;
+export const ADMIN_SETUP_TOKEN_MIN_LENGTH = 32;
